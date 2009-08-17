@@ -2,8 +2,10 @@
 // $Id$
 
 /**
- * @file
- * Quentin's experiments in Drupal coding.
+ * A module to allow user accounts to be created by XML-RPC.
+ * With thanks to Frederic Marand at http://tinyurl.com/re83hu for some ideas.
+ *
+ * Quentin Stafford-Fraser 2009.
  */
  
 function remote_user_manager_help($path, $arg) {
@@ -34,13 +36,13 @@ function remote_user_manager_init() {
 function remote_user_manager_admin() {
   $form = array();
 
-  $form['remote_user_manager_greeting'] = array(
+  $form['remote_user_manager_authorised_ip'] = array(
     '#type' => 'textfield',
     '#title' => t('Authorised remote IP address'),
-    '#default_value' => variable_get('remote_user_manager_authorised_ip', ''),
+    '#default_value' => variable_get('remote_user_manager_authorised_ip', '127.0.0.1'),
     '#size' => 15,
     '#maxlength' => 15,
-    '#description' => t("The IP address authorised to make these XML-RPC calls.  It's probably a very bad idea not to set this!"),
+    '#description' => t("The IP address authorised to make these XML-RPC calls.  It's probably a very bad idea not to set this!  XML-RPC calls <em>to this module only</em> will be rejected if not from this address."),
     '#required' => FALSE,
   );
 
@@ -61,6 +63,9 @@ Can be called e.g. from Python:
 */
 
 function remote_user_manager_createUser($username,$pass,$email) {
+    if (variable_get('remote_user_manager_authorised_ip', '') != $_SERVER['REMOTE_ADDR']) {
+        return -1;
+    }
     $newuser = array(
             "name" => $username,
             "pass" => $pass,
@@ -78,16 +83,25 @@ function remote_user_manager_createUser($username,$pass,$email) {
 
 // XML-RPC hook
 function remote_user_manager_xmlrpc () {
-    return array(
+    $ret = array(
         array(
             'remote_user_manager.createUser',  // XML-RPC method name
             'remote_user_manager_createUser',  // Function to be called
             array('int', 'string', 'string', 'string'),  // Return and arg types
-            t('Creates a new user and returns the uid, or zero if failed.') // Description
+            t('Creates a new user and returns the uid, or zero if failed, or -1 if prohibited.')
         )
     );
+    return $ret;
 }
 
+/**
+* Return an error message.
+*/
+function _remote_user_manager_ip_ban() {
+    // This address is not allowed to access this service
+  return -1;
+}  
+  
 // Hook an appropriate URL or two
 //  REMEMBER if editing the URLs you'll need to clear the caches
 
