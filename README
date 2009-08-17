@@ -1,3 +1,6 @@
 This is a Drupal module which allows you to create (and eventually, perhaps, list, delete etc) Drupal users via XML-RPC.
 
 You can specify, in the admin page, the IP address which is allowed to make these calls.
+
+Quentin Stafford-Fraser 2009
+quentin@pobox.com

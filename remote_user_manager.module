@@ -1,0 +1,108 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Quentin's experiments in Drupal coding.
+ */
+ 
+function remote_user_manager_help($path, $arg) {
+    $output="";
+    switch ($path) {
+        case "admin/help#remote_user_manager":
+        $output = '<p>'.  t("Enables XML-RPC method to create Drupal users") .'</p>';
+        break;
+    }
+    return $output;
+}
+
+function remote_user_manager_perm() {
+    return array('Administer remote_user_manager');
+}
+
+/**
+ * Implementation of hook_init().
+ */
+ 
+function remote_user_manager_init() {
+    $path = drupal_get_path('module', 'remote_user_manager');
+    // Nothing to be done here for now
+}
+
+// Create an admin form
+
+function remote_user_manager_admin() {
+  $form = array();
+
+  $form['remote_user_manager_greeting'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authorised remote IP address'),
+    '#default_value' => variable_get('remote_user_manager_authorised_ip', ''),
+    '#size' => 15,
+    '#maxlength' => 15,
+    '#description' => t("The IP address authorised to make these XML-RPC calls.  It's probably a very bad idea not to set this!"),
+    '#required' => FALSE,
+  );
+
+  return system_settings_form($form);
+}
+
+
+/*
+
+Can be called e.g. from Python:
+
+>>> import xmlrpclib
+>>> s = xmlrpclib.ServerProxy('http://localhost:8888/xmlrpc.php')
+>>> s.system.listMethods()
+...
+>>> s.remote_user_manager.createUser('mike','mikespassword','mike@mikey.com')
+
+*/
+
+function remote_user_manager_createUser($username,$pass,$email) {
+    $newuser = array(
+            "name" => $username,
+            "pass" => $pass,
+            "mail" => $email,
+            "init" => $email,
+            "status" => 1,
+        );
+    $nu = user_save(null, $newuser);
+    if ($nu) {
+        return $nu->uid;
+    } else {
+        return 0;
+    }
+}
+
+// XML-RPC hook
+function remote_user_manager_xmlrpc () {
+    return array(
+        array(
+            'remote_user_manager.createUser',  // XML-RPC method name
+            'remote_user_manager_createUser',  // Function to be called
+            array('int', 'string', 'string', 'string'),  // Return and arg types
+            t('Creates a new user and returns the uid, or zero if failed.') // Description
+        )
+    );
+}
+
+// Hook an appropriate URL or two
+//  REMEMBER if editing the URLs you'll need to clear the caches
+
+function remote_user_manager_menu() {
+
+  $items = array();
+
+  $items['admin/settings/remote_user_manager'] = array(
+    'title' => 'Remote User Manager settings',
+    'description' => 'Configuration of Remote User Manager module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('remote_user_manager_admin'),
+    'access arguments' => array('Administer remote_user_manager tools'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+   
+  return $items;
+}

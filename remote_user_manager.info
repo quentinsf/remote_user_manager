@@ -1,0 +1,5 @@
+name = Remote User Manager
+description = Create users under XML-RPC control
+core = 6.x
+version = "6.x-0.1"
+datestamp = "1250463916"
